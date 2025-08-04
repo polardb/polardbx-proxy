@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option java_package = "com.alibaba.polardbx.proxy";
+option java_outer_classname = "GeneralServiceProto";
+
+package service;
+
+service GeneralService {
+  rpc GeneralRemoteProcedure (GeneralRequest) returns (GeneralResponse);
+}
+
+message GeneralRequest {
+  string type = 1;
+  string json = 2;
+}
+
+message GeneralResponse {
+  string result = 1;
+  string json = 2;
+}

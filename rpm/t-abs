@@ -1,0 +1,348 @@
+#!/bin/sh
+usage()
+{
+  echo "About:"
+  echo "  This is ABS sandbox. You can imitate ABS packaging through t-abs command."
+  echo "  t-abs command should be run under ./rpm directory"
+  echo "Usage:"
+  echo "  t-abs  [<options>] [args]"
+  echo "Options: "
+  echo "  -h        Show help"
+  echo "  -t PKGNAME    Get the packages from test branch of yum. Example: -t 'pkgname1,pkgnam2'. It will disable by -T"
+  echo "  -T        Get all dependon packages from test branch of yum."
+  echo "            By default, BuildRequire's package will be got from current"
+  echo "  -c        Auto create  spec file step by step"
+  echo "  -n PKGNAME    Get the newest packages from current branch of yum. Example: -n 'pkgname1,pkgnam2'. It will disable by -T"
+  echo "  -v VERSION    Create rpm with the version. Example: t-abs my.spec -v 1.0.0 -r 5, will package my-1.0.0-5.el5.rpm,depend on your spec file."
+  echo "  -r RELEASE    Create rpm with the release number"
+  echo "  -p PREFIX Create rpm with the prefix path. Example: -p /home/a/hash"
+  echo "  -R JOBNAME    To remotely execute the job of  forDEV build and forQA build in ABS ."
+  echo "  -P JOBNAME    To remotely execute the job of  forPE build in ABS ."
+  echo "  -u USERNAME:PASSWORD  Specify our username and password in ABS,such as -uxuejiang:12345678, work with -R para ."
+  echo "  -m        I handle BuildRequires myself."
+  echo "  -d SPECFILE   Create app.deps from spec. Example:t-abs -d my.spec"
+  echo "  --upload  Upload the rpm to rpm.corp.taobao.com and waiting for SCM to review and verify. Example:t-abs --upload *.rpm"
+  echo "Example:"
+  echo "    t-abs my.spec -t 'mysql-devel,boost-devel'"
+  echo "        will package the my.spec, and mysql-devel boost-devel will be installed from test branch"
+  echo "    t-abs"
+  echo "        will package all spec files of the ./rpm "
+  echo "    t-abs -T"
+  echo "        will package all spec files of the ./rpm, and their dependons will be installed from test branch"
+  echo "    t-abs -R t-wws-server -u xuejiang:123456"
+  echo "        will call the ABS jobs t-wws-server remotely,  forDEV building and forQA building."
+  echo "    t-abs -P t-wws-server -u xuejiang:123456"
+  echo "        will call the ABS jobs t-wws-server remotely, forPE building only."
+
+
+  exit 0
+}
+create()
+{
+    echo -n "What's the project name? (Name should be like: t-product-module):"
+    while read name;do
+        if [ x"$name" = 'x' ];then
+            echo -n "Cann't be empty, Input the project name:"
+            continue;
+        fi
+        regx="^[a-zA-Z0-9|_|-]{3,50}$"
+        if [[ ! "$name" =~ $regx ]];then
+            echo -n "invalid name. Input the project name:"
+            continue;
+        fi
+        break
+    done
+    echo -n "Say something about the project(summary):"
+    while read summary;do
+        if [ x"$summary" = 'x' ];then
+            echo -n "Cann't be empty, Input the summary about the project:"
+            continue;
+        fi
+        break
+    done
+
+    echo  "What's your program language? 1.C/C++; 2.JAVA;3.shell/php/sql/such so"
+    echo -n "input 1 or 2 or 3:"
+    while read lan;do
+        regx="^(1|2|3)$"
+        if [[ ! "$lan" =~ $regx ]];then
+            echo -n "please input 1 or 2 or 3 to choose language:"
+            continue;
+        fi
+        prefix="/home/a/project/$name"
+        noarch="BuildArch:noarch";
+        release="%(echo \$RELEASE)"
+install="
+rsync -avz \$OLDPWD/../ .%{_prefix}  --exclude=.svn --exclude=rpm/ --exclude=.git
+"
+        if [ "$lan" = 2 ];then
+            prefix="/home/admin/$name"
+            install="
+cd \$OLDPWD/../;
+mvn package -U -Dmaven.test.skip=true;
+find \$OLDPWD/../ -name "*.war" -exec cp "{}" .%{_prefix}/ \;
+"
+
+        fi
+        if [ "$lan" = 1 ];then
+            noarch=''
+            release="%(echo \$RELEASE)%{?dist}"
+post="%post -p /sbin/ldconfig"
+postun="%postun -p /sbin/ldconfig"
+            install="
+cd \$OLDPWD/../;
+make;
+make install DESTDIR=\${RPM_BUILD_ROOT}/%{_prefix};
+"
+        fi
+        break
+    done
+
+    echo -n "Where you wish to install: ($prefix)"
+    read pprefix;
+    if [ x"$pprefix" != 'x' ];then
+        prefix=$pprefix;
+    fi
+    mydate=`date +"%a %b %d %Y"`
+    CALLER=`env|grep LOGNAME|awk -F'=' '{print $NF}'`
+    if test -f ${name}.spec;then mv  ${name}.spec $name.spec.bak;fi
+    cat /usr/local/share/docs/t-abs/sample.spec|\
+    while read line;do
+        echo "$line" |grep -q "xuejiang"
+        if [ $? = 0 ];then
+            n=`echo "$line"|sed  "s/.*xuejiang:\(.*\)/\1/g"`
+            k=$(eval echo \$$n)
+            line=`echo "$line"|sed "s|xuejiang:$n|$k|"`
+        fi
+        echo "$line" >> ${name}.spec
+    done
+    echo "Info: $name.spec create success! You can run 't-abs' to create rpm now."
+    exit 0;
+}
+function getuser()
+{
+    if [ x"$username" != 'x' ];then
+        para=" -s -u $username "
+    else
+    echo -n "Please input your domain username($USER):"
+    while read user;do
+        if [ x"$user" = 'x' ];then
+            user=$USER
+        fi
+        break
+    done
+    stty -echo
+    echo -n "Please input your domain password:"
+    while read passwd;do
+        if [ x"$passwd" = 'x' ];then
+            echo -n "password counldn't be empty. Please input your domain password in ABS:"
+            continue
+        fi
+        break
+    done
+    stty echo
+    username="$user:$passwd"
+    para=" -s -u $username"
+
+    fi
+}
+function remote()
+{
+    if [ x"$appname"  = 'x' ];then
+        echo "usage: t-abs -R JOB_NAME "
+        echo "example: t-abs -R t-wwws-server."
+        exit;
+    fi
+    getuser
+    #URL="http://10.20.142.161:8080/hudson/job/$APP_NAME"
+    URL=`curl "http://rpm.corp.taobao.com/absapi.php?q=$appname"`
+    if [ x"$URL" = 'x' ];then
+        echo "Error:can not get the $appname url of ABS"
+        exit 1
+    fi
+    echo "info: found the ABS url of $appname :$URL"
+    if [ "$publish" = 1 ];then
+    echo "forPE building now ..."
+    curl $para "$URL/process/convertCurrent?BUILDPASS=222"
+    else
+        echo "forDEV building now..."
+        curl $para "$URL/process/api/json"
+        echo ""
+        echo "forQA building now ..."
+        curl $para "$URL/process/convertTest?BUILDPASS=111"
+    fi
+}
+function dots
+{
+        stty -echo >/dev/null 2>&1
+        while true
+        do
+                echo -e ".\c";sleep 1;
+        done
+        stty echo
+        echo
+}
+function create_deps()
+{
+    if [ ! -f $appname.spec ];then
+        echo "Error:$appname.spec do not exists"
+        return
+    fi
+    if [ -f $appname.deps ];then
+        echo "Warning:$appname.deps already exists. We do nothing."
+        return
+    fi
+    echo "[Info] begin to analy buildRequires and create $appname.deps"
+    echo "[deps]" > $appname.deps
+    cat $appname.spec|grep  -i "BuildRequires:"|sed "s/BuildRequires://g"|sed "s/\s*=\s*/-/g" >> $appname.deps
+    sed -i "s/>.*$//"  $appname.deps
+    mkdir .x
+    cd .x
+
+    trap 'kill $BG_PID;echo;exit' 1 2 3 15
+    dots &
+    BG_PID=$!
+
+    _absdownload 'pkg' $appname
+    cd pkg
+    while read -r line
+    do
+        [ "$line" = "[deps]" ] && continue
+        echo "#$line requires are:" >> $appname.deps.org
+        rpm -qpR $line*.rpm|grep -v "("|grep -v '/'|grep -v '.so.'|sort|uniq|sed "s/>.*$//"|sed "s/\s*=\s*/-/g"|uniq >> $appname.deps.org
+    done < ../../$appname.deps
+    echo " " >>$appname.deps
+    echo "#second level requires analysis:" >> $appname.deps
+    rpm -qpR *.rpm|grep -v "("|grep -v '/'|grep -v '.so.'|sort|uniq|sed "s/>.*$//"|sed "s/\s*=\s*/-/g"|grep -v '<'|uniq >> $appname.deps
+    mv $appname.deps.org ../../
+    cat $appname.deps >> ../../$appname.deps
+    cd ../../
+    rm -rf .x
+
+    kill $BG_PID
+
+
+    echo "[info]:$appname.deps created. You should check and edit it( and the file $appname.deps.org maybe helpful )"
+}
+function getinfo()
+{
+    os=`cat /etc/redhat-release |awk '{print $7}'|awk -F'.' '{print $1}'`
+    if [ `uname -i` = "x86_64" ];then arch="x86_64"; else arch="i386"; fi
+}
+function uploadrpm()
+{
+    rpmfiles=$@
+    getuser
+    getinfo
+    #os input
+    echo ""
+    echo "Which OS you want to upload? 1: el4  2: el5  3: el6  4: all"
+    echo -n "    input 1 or 2 or 3 or 4:"
+    read osinput;
+    echo "$osinput" |grep -q -E  '[1-9]+'  || {
+        echo "error input $osinput of os." && exit 1
+    }
+    if [ "$osinput" = '4' ]  ;then
+        osarra="-F os[]=4 -F os[]=5 -F os[]=6"
+    elif [ "$osinput" = '' ] ;then
+         osarra="-F os[]=$os"
+    else
+        let "osinput = $osinput + 3"
+        osarra="-F os[]=$osinput"
+    fi
+
+  #branch input
+    echo  "Which yum branch? 1. test  2. current"
+    echo -n "   input 1 or 2 (default 1):"
+    read brinput;
+    if [ "$brinput" = '2' ];then
+        br='current'
+    else
+        br='test'
+    fi
+
+  #upload
+    curl -s $para -c .xuejiangt "http://rpm.corp.taobao.com/UserIdentity.php?url=rpmupload.php" >/dev/null
+    for rpmfile in $rpmfiles; do
+        [ ! -f $rpmfile ] && echo "$rpmfile not exists,ignore." && continue;
+        echo "$rpmfile" |grep -q ".noarch."  &&  arch="noarch"
+        echo "$rpmfile" |grep -q ".i386."  &&  arch="i386"
+        echo "$rpmfile" |grep -q ".i686."  &&  arch="i386"
+        curl -s -b .xuejiangt -F userfile=@$rpmfile $osarra -F "arch=$arch" -F "br=$br"  "http://rpm.corp.taobao.com/rpmupload.php" 1>/dev/null
+        [ $? = 0 ] && echo "$rpmfile upload  OK. Waiting scm to review and verify"
+    done
+    rm -f .xuejiangt
+
+    exit
+}
+TEMP=`getopt -o p:v:r:t:u:RPcmhkTd --long upload -- "$@"`
+eval set -- "$TEMP"
+
+prefix=/home/a
+version='1.0.0'
+release='1'
+keep=0
+while true ; do
+  case "$1" in
+    -h) usage; shift ;;
+    -c) create; shift ;;
+    -R) inremote=1; shift  ;;
+    -P) publish=1; shift  ;;
+    -m) myself=1; shift ;;
+    -p) prefix=$2; shift 2 ;;
+    -d) create_dep=1; shift  ;;
+    -u) username=$2; shift 2 ;;
+    -n) newest=$2; shift 2 ;;
+    -v) version=$2; shift 2 ;;
+    -r) release=$2; shift 2 ;;
+    -T) all_test=1; shift ;;
+    -t) from_test=$2; shift 2 ;;
+    --upload) uploadrpm ${@:3};shift 2;;
+    --) shift; break;;
+  esac
+done
+
+if [ $# -gt 0 ]; then
+  specs=$@
+else
+  specs=`ls *.spec 2>/dev/null`
+  if [ -z "$specs" ];then
+    echo "cann't found spec file"
+  fi
+fi
+workdir=`pwd`
+for spec in $specs; do
+    appname=${spec/.spec/}
+        if [ "$inremote" = 1 ];then
+            remote
+            exit
+        fi
+        if [ "$publish" = 1 ];then
+            remote
+            exit
+        fi
+    dos2unix $workdir/$spec >/dev/null
+    if [ "$create_dep" = 1 ];then
+        create_deps $appname
+        continue
+    fi
+    if [ "$all_test" = 1 ];then
+        opt="-T"
+    fi
+        #if [ "$myself" != 1 ];then
+        #    prepare_sandbox.pl $workdir/$spec  -n "$newest" -tb "$from_test" $opt
+        #fi
+    [ -f $appname.deps ] && {
+        grep -q "dep_create"  $appname-build*.sh ${spec} || {
+             echo "[info]自动运行 dep_create 并声明PATH变量"
+                     dep_create $appname
+            }
+        export PATH=${workdir}/.dep_create/bin:$PATH
+    }
+    if [ -f $appname-build.sh ];then
+        chmod +x $appname-build.sh
+        ./$appname-build.sh $workdir/.. $appname $version $release
+    else
+        ./rpm_create $spec -v $version -r $release -p $prefix
+    fi
+done

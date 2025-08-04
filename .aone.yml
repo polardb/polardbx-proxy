@@ -1,0 +1,9 @@
+t-polardbx-proxy:
+  pkgpara:
+    DOCKER: 1
+    DO_TAG: 1
+    jdk_version: ajdk11_11.0.11.11
+    mvn_version: 3.9.2
+    MULTI_PK: t-polardbx-proxy
+    NO_BUILDNUMBER: 1
+    ALLOW_SAME: 1
