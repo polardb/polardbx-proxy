@@ -2,7 +2,7 @@
 
 PolarDB-X Proxy is a proxy for PolarDB-X standard version.
 
-Design: [DOC](https://aliyuque.antfin.com/coronadb/design/up8z2dlcsg61hr6n)
+User manual: [DOC](polardbx_proxy_user_manual.md)
 
 ## Building
 
