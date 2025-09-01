@@ -37,13 +37,15 @@ PolarDB-X Proxy 是使用 Java 开发的高性能 PolarDB-X 标准版代理，�
 
 # 二进制部署包
 ## 打包命令
+maven3.6.3或更高版本
+在根目录执行以下命令（无须进入子目录）
 ```java
-mvn clean -DskipTests package
+mvn clean -DskipTests package -Denv=release
 ```
 
 ## 部署方式
 ### 环境要求
-JDK 11 或更高版本
+JDK 11（推荐） 或更高版本（未经过验证）
 
 ```shell
 [chenyu.zzy@k28a09207.eu95sqa /u01/chenyu.zzy/proxy_demo/polardbx-proxy-0620-node-0/logs/_system]
@@ -52,6 +54,11 @@ openjdk 11.0.11.11-AJDK 2021-12-23
 OpenJDK Runtime Environment (Alibaba AJDK) (build 11.0.11.11-AJDK+145-Alibaba)
 OpenJDK 64-Bit Server VM (Alibaba AJDK) (build 11.0.11.11-AJDK+145-Alibaba, mixed mode)
 ```
+
+### 标准版xcluster三节点集群配置要求
+- cluster_info中配置的ip地址需为proxy可连接地址
+- cluster_info中配置的paxos_port（即系统表information_schema中alisql_cluster_global显示的端口）和服务端口server port(一般配置为3306)的差值要保持一致
+  - 例如：三节点的server port分别为3306、3307、3308， cluster_info中配置的paxos_port则需要配置为11306、11307、11308
 
 ### 解压及部署目录
 + <font style="color:#DF2A3F;">目录名称必须包含</font>**<font style="color:#DF2A3F;">polardbx-proxy</font>**，后面可以加上其他内容便于区分
@@ -92,6 +99,7 @@ drwxr-xr-x 2 chenyu.zzy users 4096 Jun 20 15:01 logs
     - backend_username 为当前 PolarDB-X 标准版设置的超级管理员账号
         * 该必须具备 Super 权限
     - backend_password 为当前 PolarDB-X 标准版设置的超级管理员密码
+        * 密码不能为空
         * 未设置秘钥环境变量时候为明文
         * 设置 dnPasswordKey 环境变量后，这里设置为对应加密的密文
 

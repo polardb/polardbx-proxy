@@ -338,7 +338,7 @@ fi
 #https://workitem.aone.alibaba-inc.com/req/33334239
 JAVA_OPTS="$JAVA_OPTS -Dtxc.vip.skip=true "
 
-JAVA_OPTS="$JAVA_OPTS -Xss4m -XX:+AggressiveOpts -XX:-UseBiasedLocking -XX:-OmitStackTraceInFastThrow "
+JAVA_OPTS="$JAVA_OPTS -Xss4m -XX:-UseBiasedLocking -XX:-OmitStackTraceInFastThrow "
 
 if [ $JavaVersion -ge 11 ] ; then
   JAVA_OPTS="$JAVA_OPTS"
