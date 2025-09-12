@@ -19,7 +19,7 @@
 package com.alibaba.polardbx.proxy;
 
 import com.alibaba.polardbx.proxy.cluster.AcceptIdGenerator;
-import com.alibaba.polardbx.proxy.cluster.GeneralIdGenerator;
+import com.alibaba.polardbx.proxy.cluster.FastIdGenerator;
 import com.alibaba.polardbx.proxy.cluster.NodeWatchdog;
 import com.alibaba.polardbx.proxy.common.ThreadNames;
 import com.alibaba.polardbx.proxy.config.ConfigLoader;
@@ -49,13 +49,13 @@ public class ProxyServer implements NIOConnectionFactory {
     private static final Logger LOGGER = LoggerFactory.getLogger(ProxyServer.class);
 
     private final AcceptIdGenerator acceptIdGenerator;
-    private final GeneralIdGenerator trxIdGenerator;
+    private final FastIdGenerator trxIdGenerator;
     private final NIOWorker worker;
 
     private ProxyServer() throws Exception {
         final int clusterNodeId = Integer.parseInt(ConfigLoader.PROPERTIES.getProperty(ConfigProps.CLUSTER_NODE_ID));
         acceptIdGenerator = new AcceptIdGenerator(clusterNodeId);
-        trxIdGenerator = new GeneralIdGenerator(clusterNodeId);
+        trxIdGenerator = new FastIdGenerator(clusterNodeId);
 
         final int cpus = Integer.parseInt(ConfigLoader.PROPERTIES.getProperty(ConfigProps.CPUS));
         final int factor = Integer.parseInt(ConfigLoader.PROPERTIES.getProperty(ConfigProps.REACTOR_FACTOR));

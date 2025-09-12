@@ -243,7 +243,7 @@ public class QueryResultCallback extends ResultCallbackBase {
             }
         }
 
-        if (ExtraLog.SqlLog.isInfoEnabled()) {
+        if (FastConfig.enableSqlLog && ExtraLog.SqlLog.isInfoEnabled()) {
             // done and do sql log
             final long currentNanos = System.nanoTime();
             MDC.put("schema", context.getDatabase());

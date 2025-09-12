@@ -18,7 +18,9 @@
 
 package com.alibaba.polardbx.proxy.utils;
 
+import com.alibaba.polardbx.proxy.config.FastConfig;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -67,6 +69,11 @@ public class LeakCheckerTest {
         try (final Resource resource = new Resource(leakCount, freeCount)) {
             resource.val = System.nanoTime();
         }
+    }
+
+    @Before
+    public void setUp() {
+        FastConfig.enableLeakCheck = true;
     }
 
     @Test

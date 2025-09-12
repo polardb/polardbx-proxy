@@ -70,6 +70,7 @@ sourcePwd=
 mem_size=
 
 proxy_config=$base/conf/config.properties
+git_properties=$base/conf/git.properties
 logback_configurationFile=$base/conf/logback.xml
 release_note=$base/../releaseNote
 base_log=$base/logs
@@ -248,6 +249,9 @@ fi
 if [ ! -d $base_log ] ; then
 	mkdir -p $base_log
 fi
+if [ ! -d $base_log/_system ] ; then
+	mkdir -p $base_log/_system
+fi
 
 ## set java path(use native java first)
 TAOBAO_JAVA="/opt/taobao/java_coroutine/bin/java"
@@ -362,16 +366,16 @@ export LD_LIBRARY_PATH=../lib/native
 JAVA_OPTS=" $JAVA_OPTS -Djava.awt.headless=true -Dcom.alibaba.java.net.VTOAEnabled=true -Djava.net.preferIPv4Stack=true -Dfile.encoding=UTF-8 -Ddruid.logType=slf4j"
 
 if [ $JavaVersion -ge 11 ] ; then
-  JAVA_OPTS=" $JAVA_OPTS -Xlog:gc*:$base_log/gc.log:time "
+  JAVA_OPTS=" $JAVA_OPTS -Xlog:gc*:$base_log/_system/gc.log:time "
   JAVA_OPTS="$JAVA_OPTS"
 else
-  JAVA_OPTS=" $JAVA_OPTS -Xloggc:$base_log/gc.log -XX:+PrintGCDetails "
+  JAVA_OPTS=" $JAVA_OPTS -Xloggc:$base_log/_system/gc.log -XX:+PrintGCDetails "
   JAVA_OPTS="$JAVA_OPTS -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime"
 fi
 
 JAVA_OPTS=" $JAVA_OPTS -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=$base_log -XX:+CrashOnOutOfMemoryError -XX:ErrorFile=$base_log/hs_err_pid%p.log"
 
-PROXY_OPTS=" $PROXY_OPTS -Dlogback.configurationFile=$logback_configurationFile -Dserver.conf=$proxy_config"
+PROXY_OPTS=" $PROXY_OPTS -Dlogback.configurationFile=$logback_configurationFile -Dserver.conf=$proxy_config -Dgit.properties=$git_properties"
 
 if [ -e "$release_note" ]
 then
@@ -402,7 +406,7 @@ fi
 	echo LOG CONFIGURATION : $logback_configurationFile
 	echo PROXY CONFIGURATION : "$proxy_config"
 	echo CLASSPATH : $CLASSPATH
-	$TASKSET $JAVA $BIANQUE_AGENT_OPTS $JAVA_OPTS $JAVA_DEBUG_OPT $PROXY_OPTS -classpath .:$CLASSPATH com.alibaba.polardbx.proxy.server.ProxyLauncher 1>>$base_log/proxy-console.log 2>&1 &
+	$TASKSET $JAVA $BIANQUE_AGENT_OPTS $JAVA_OPTS $JAVA_DEBUG_OPT $PROXY_OPTS -classpath .:$CLASSPATH com.alibaba.polardbx.proxy.server.ProxyLauncher 1>>$base_log/_system/proxy-console.log 2>&1 &
 	echo "$! #@# $args" > $pidfile
 	echo "cd to $current_path for continue"
   	cd $current_path

@@ -19,11 +19,12 @@
 package com.alibaba.polardbx.proxy.cluster;
 
 import com.alibaba.polardbx.proxy.serverless.HaManager;
+import com.alibaba.polardbx.proxy.utils.VersionUtils;
 
 import java.nio.charset.StandardCharsets;
 
 public class InstanceVersion {
-    private static final String VERSION_TAIL = "-X-Proxy-1.0.0";
+    private static final String VERSION_TAIL = "-X-Proxy-" + VersionUtils.getVersion();
     private static final byte[] VERSION_TAIL_BYTES = VERSION_TAIL.getBytes(StandardCharsets.UTF_8);
 
     public static byte[] buildVersion() {

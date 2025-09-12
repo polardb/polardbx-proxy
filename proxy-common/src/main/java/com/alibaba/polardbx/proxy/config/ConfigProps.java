@@ -114,6 +114,12 @@ public class ConfigProps {
     // dnPasswordKey
     public static final String DN_PASSWORD_KEY = "dn_password_key";
 
+    // log
+    public static final String ENABLE_SQL_LOG = "enable_sql_log";
+
+    // extreme performance
+    public static final String ENABLE_LEAK_CHECK = "enable_leak_check";
+
     /**
      * Default properties.
      */
@@ -174,7 +180,7 @@ public class ConfigProps {
         DEFAULT_PROPS.setProperty(PRIVILEGE_REFRESH_TIMEOUT, "10000");
         DEFAULT_PROPS.setProperty(PRIVILEGE_REFRESH_INTERVAL, "10000"); // per 10s
 
-        DEFAULT_PROPS.setProperty(PREPARED_STATEMENT_CACHE_SIZE, "1000");
+        DEFAULT_PROPS.setProperty(PREPARED_STATEMENT_CACHE_SIZE, "100");
 
         DEFAULT_PROPS.setProperty(LOG_SQL_MAX_LENGTH, "4096");
         DEFAULT_PROPS.setProperty(LOG_SQL_PARAM_MAX_LENGTH, "4096");
@@ -194,5 +200,9 @@ public class ConfigProps {
         DEFAULT_PROPS.setProperty(SMOOTH_SWITCHOVER_WAIT_TIMEOUT, "10000");
 
         DEFAULT_PROPS.setProperty(DN_PASSWORD_KEY, "");
+
+        DEFAULT_PROPS.setProperty(ENABLE_SQL_LOG, "true");
+
+        DEFAULT_PROPS.setProperty(ENABLE_LEAK_CHECK, "false"); // no leak check for extreme performance
     }
 }

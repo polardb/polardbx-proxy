@@ -34,6 +34,8 @@ public class FastConfig {
     public static volatile boolean enableSmoothSwitchover;
     public static volatile int smoothSwitchoverCheckInterval;
     public static volatile int smoothSwitchoverWaitTimeout;
+    public static volatile boolean enableSqlLog;
+    public static volatile boolean enableLeakCheck;
 
     static {
         // refresh to default
@@ -66,5 +68,7 @@ public class FastConfig {
             Integer.parseInt(ConfigLoader.PROPERTIES.getProperty(ConfigProps.SMOOTH_SWITCHOVER_CHECK_INTERVAL));
         smoothSwitchoverWaitTimeout =
             Integer.parseInt(ConfigLoader.PROPERTIES.getProperty(ConfigProps.SMOOTH_SWITCHOVER_WAIT_TIMEOUT));
+        enableSqlLog = Boolean.parseBoolean(ConfigLoader.PROPERTIES.getProperty(ConfigProps.ENABLE_SQL_LOG));
+        enableLeakCheck = Boolean.parseBoolean(ConfigLoader.PROPERTIES.getProperty(ConfigProps.ENABLE_LEAK_CHECK));
     }
 }

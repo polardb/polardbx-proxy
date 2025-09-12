@@ -210,4 +210,26 @@ public class SecurityUtil {
             throw new RuntimeException("param error during decrypt", ex);
         }
     }
+
+    public static void main(String[] args) {
+        // 2 args required
+        if (args.length != 2) {
+            System.out.println("Usage: java SecurityUtil <plainPassword> <key>");
+            return;
+        }
+        // check key size
+        if (args[1].length() != 16) {
+            System.out.println("Key size must be 16");
+            return;
+        }
+        // check key is hex
+        for (int i = 0; i < args[1].length(); i++) {
+            if (!Character.isDigit(args[1].charAt(i)) && !Character.isLetter(args[1].charAt(i))) {
+                System.out.println("Key must be hex");
+                return;
+            }
+        }
+        // output encrypted password
+        System.out.println(encryptByKey(args[0], args[1]));
+    }
 }

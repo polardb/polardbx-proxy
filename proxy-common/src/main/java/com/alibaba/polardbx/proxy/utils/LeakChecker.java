@@ -18,6 +18,7 @@
 
 package com.alibaba.polardbx.proxy.utils;
 
+import com.alibaba.polardbx.proxy.config.FastConfig;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -75,17 +76,27 @@ public abstract class LeakChecker implements AutoCloseable {
     }
 
     public LeakChecker(final LeakCallback staticLeakCallback) {
-        this.cleanAction = new CleanAction(leakCheckClosed, staticLeakCallback);
-        this.leakCallback = null == staticLeakCallback ? this.cleanAction : staticLeakCallback;
-        this.cleanable = CLEANER.register(this, this.cleanAction);
+        if (FastConfig.enableLeakCheck) {
+            this.cleanAction = new CleanAction(leakCheckClosed, staticLeakCallback);
+            this.leakCallback = null == staticLeakCallback ? this.cleanAction : staticLeakCallback;
+            this.cleanable = CLEANER.register(this, this.cleanAction);
+        } else {
+            this.cleanAction = null;
+            this.leakCallback = null;
+            this.cleanable = null;
+        }
     }
 
     public void setTag(String tag) {
-        leakCallback.setTag(tag);
+        if (leakCallback != null) {
+            leakCallback.setTag(tag);
+        }
     }
 
     public void setKillWhenLeak(boolean killWhenLeak) {
-        cleanAction.setKillWhenLeak(killWhenLeak);
+        if (cleanAction != null) {
+            cleanAction.setKillWhenLeak(killWhenLeak);
+        }
     }
 
     @Override
@@ -93,6 +104,8 @@ public abstract class LeakChecker implements AutoCloseable {
         if (!leakCheckClosed.getPlain()) {
             leakCheckClosed.set(true); // full fence set
         }
-        cleanable.clean();
+        if (cleanable != null) {
+            cleanable.clean();
+        }
     }
 }

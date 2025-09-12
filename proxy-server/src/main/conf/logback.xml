@@ -27,10 +27,10 @@
     </appender>
 
     <appender name="ROOT" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <File>${loggerRoot:-..}/logs/_system/proxy.log</File>
+        <File>${loggerRoot:-..}/logs/proxy.log</File>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
             <!-- rollover daily -->
-            <fileNamePattern>${loggerRoot:-..}/logs/_system/%d{yyyy-MM-dd}/proxy-%d{yyyy-MM-dd}-%i.log.gz
+            <fileNamePattern>${loggerRoot:-..}/logs/%d{yyyy-MM-dd}/proxy-%d{yyyy-MM-dd}-%i.log.gz
             </fileNamePattern>
             <!-- each file should be at most 512MB, keep 30 days worth of history, but at most 60GB -->
             <maxFileSize>512MB</maxFileSize>
@@ -53,33 +53,25 @@
         <appender-ref ref="ROOT"/>
     </appender>
 
-    <appender name="SQL" class="ch.qos.logback.classic.sift.SiftingAppender">
-        <discriminator>
-            <Key>schema</Key>
-            <DefaultValue>default_schema</DefaultValue>
-        </discriminator>
-        <sift>
-            <appender name="SQL-{schema}" class="ch.qos.logback.core.rolling.RollingFileAppender">
-                <File>${loggerRoot:-..}/logs/${schema}/sql.log</File>
-                <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-                    <!-- rollover daily -->
-                    <fileNamePattern>${loggerRoot:-..}/logs/${schema}/%d{yyyy-MM-dd}/sql-%d{yyyy-MM-dd}-%i.log.gz
-                    </fileNamePattern>
-                    <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
-                        <!-- or whenever the file size reaches 100MB -->
-                        <maxFileSize>512MB</maxFileSize>
-                    </timeBasedFileNamingAndTriggeringPolicy>
-                    <maxHistory>7</maxHistory>
-                    <totalSizeCap>100GB</totalSizeCap>
-                </rollingPolicy>
-                <encoder>
-                    <immediateFlush>true</immediateFlush>
-                    <pattern>
-                        %d{yyyy-MM-dd HH:mm:ss.SSS} - [%X{CONNECTION}] %msg%n
-                    </pattern>
-                </encoder>
-            </appender>
-        </sift>
+    <appender name="SQL" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${loggerRoot:-..}/logs/sql.log</File>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- rollover daily -->
+            <fileNamePattern>${loggerRoot:-..}/logs/%d{yyyy-MM-dd}/sql-%d{yyyy-MM-dd}-%i.log.gz
+            </fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <!-- or whenever the file size reaches 100MB -->
+                <maxFileSize>512MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>100GB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <immediateFlush>true</immediateFlush>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} - [%X{CONNECTION}] %msg%n
+            </pattern>
+        </encoder>
     </appender>
 
     <appender name="asyncSQL" class="ch.qos.logback.classic.AsyncAppender">

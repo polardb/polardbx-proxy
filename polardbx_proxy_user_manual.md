@@ -106,7 +106,7 @@ drwxr-xr-x 2 chenyu.zzy users 4096 Jun 20 15:01 logs
 ```properties
 # global settings
 worker_threads=4
-cpus=4
+cpus=0
 reactor_factor=1
 cluster_node_id=0
 # frontend configuration
@@ -274,79 +274,16 @@ backend_password=wflYk5saIuyUdCjuOkX6NQ==
 dn_password_key=1111111111111111
 ```
 
-```java
-private static final String DN_PASSWORD_KEY = "dnPasswordKey";
++ 生成秘钥可使用如下命令
 
-public static String encrypt(String sSrc) {
-    return encrypt(sSrc, null);
-}
+```shell
+[chenyu.zzy@k28a09207.eu95sqa /u01/chenyu.zzy/proxy_demo/polardbx-proxy-0620-node-0]
+$java -classpath .:./lib/proxy-core-5.4.20-SNAPSHOT.jar com.alibaba.polardbx.proxy.privilege.SecurityUtil
+Usage: java SecurityUtil <plainPassword> <key>
 
-public static String decrypt(String sSrc) {
-    return decrypt(sSrc, null);
-}
-
-// Encode, AES + Base64
-public static String encrypt(String sSrc, String key) {
-    String sKey = key;
-    // Overwrite key with environment variable.
-    final String configKey = ConfigLoader.PROPERTIES.getProperty(ConfigProps.DN_PASSWORD_KEY);
-    if (null != System.getenv(DN_PASSWORD_KEY)) {
-        sKey = System.getenv(DN_PASSWORD_KEY);
-    } else if (configKey != null && !configKey.isEmpty()) {
-        sKey = configKey;
-    }
-    return null == sKey ? sSrc : encryptByKey(sSrc, sKey);
-}
-
-// Decode, AES + Base64
-public static String decrypt(String sSrc, String key) {
-    String sKey = key;
-    // Overwrite key with environment variable.
-    final String configKey = ConfigLoader.PROPERTIES.getProperty(ConfigProps.DN_PASSWORD_KEY);
-    if (null != System.getenv(DN_PASSWORD_KEY)) {
-        sKey = System.getenv(DN_PASSWORD_KEY);
-    } else if (configKey != null && !configKey.isEmpty()) {
-        sKey = configKey;
-    }
-    return null == sKey ? sSrc : decryptByKey(sSrc, sKey);
-}
-
-public static String encryptByKey(String sSrc, String key) {
-    if (key.isEmpty()) {
-        return sSrc;
-    }
-    try {
-        final byte[] raw = key.getBytes(StandardCharsets.UTF_8);
-        final SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES");
-        // "算法/模式/补码方式"
-        final Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, skeySpec);
-        final byte[] encrypted = cipher.doFinal(sSrc.getBytes(StandardCharsets.UTF_8));
-        // 此处使用BASE64做转码功能，同时能起到2次加密的作用。
-        return Base64.getEncoder().encodeToString(encrypted);
-    } catch (Throwable ex) {
-        throw new RuntimeException("param error during encrypt", ex);
-    }
-}
-
-// Decode, AES + Base64
-public static String decryptByKey(String sSrc, String key) {
-    if (key.isEmpty()) {
-        return sSrc;
-    }
-    try {
-        final byte[] raw = key.getBytes(StandardCharsets.UTF_8);
-        final SecretKeySpec skeySpec = new SecretKeySpec(raw, "AES");
-        final Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
-        cipher.init(Cipher.DECRYPT_MODE, skeySpec);
-        // 先用base64解密
-        final byte[] encrypted1 = Base64.getDecoder().decode(sSrc);
-        final byte[] original = cipher.doFinal(encrypted1);
-        return new String(original, StandardCharsets.UTF_8);
-    } catch (Exception ex) {
-        throw new RuntimeException("param error during decrypt", ex);
-    }
-}
+[chenyu.zzy@k28a09207.eu95sqa /u01/chenyu.zzy/proxy_demo/polardbx-proxy-0620-node-0]
+$java -classpath .:./lib/proxy-core-5.4.20-SNAPSHOT.jar com.alibaba.polardbx.proxy.privilege.SecurityUtil 123456 1111111111111111
+wflYk5saIuyUdCjuOkX6NQ==
 ```
 
 ### 负载均衡
@@ -369,10 +306,19 @@ PolarDB-Proxy 默认开启事务级读写分离，使用 follower 和 learner �
 + fetch_lsn_timeout，获取 leader 节点 LSN 超时时间，默认 1000ms
 + fetch_lsn_retry_times，获取 leader 节点 LSN 最大重试次数，默认 3
 + enable_stale_read，是否允许备库弱一致性读，默认 false
++ enable_sql_log, 是否打印 SQL 语句，默认 true
 
 #### 典型场景
+##### 关闭SQL日志
+config.properties 中加入以下配置，关闭 SQL 语句打印，以提升性能
+```properties
+enable_sql_log=false
+```
+
 ##### 备库一致性读
 默认配置下，会在请求备库前，在 leader 节点上获取日志位点，在备库上应用后，再执行查询，实现具备外部一致性的读，即可以保证跨事务、跨 session 的写后读。
+
+**注意**，当使用该模式时，如果业务流量中的写操作不频繁，建议在DN集群中设置```set global consensus_weak_read_refresh_timeout=0;```，以确保follower、learner节点能快速重放日志，避免备库一致性读的性能抖动。
 
 ##### 高性能读
 config.properties 中加入以下配置，跳过日志位点重放等待，在放弃一定数据新鲜度的条件下，提升备库读的性能，达到读性能线性扩展。
@@ -480,7 +426,7 @@ mysql> show properties;
 | dynamic_config_file                | dynamic.json                           |
 | read_weights                       |                                        |
 | node_lease                         | 10000                                  |
-| prepared_statement_cache_size      | 1000                                   |
+| prepared_statement_cache_size      | 100                                    |
 | smooth_switchover_check_interval   | 100                                    |
 | backend_rw_max_pooled_size         | 600                                    |
 | query_retransmit_slow_retry_delay  | 1000                                   |
@@ -567,7 +513,7 @@ mysql> show rw;
 ```
 
 # 日志
-+ logs 目录会按库名区分<font style="color:rgb(38, 38, 38);">记录全部</font><font style="color:rgb(38, 38, 38);background-color:rgba(0, 0, 0, 0.06);">COM_QUERY、COM_STMT_EXECUTE、COM_STMT_FETCH</font><font style="color:rgb(38, 38, 38);">的请求，也会记录相关阶段的耗时信息</font>
++ logs 目录会<font style="color:rgb(38, 38, 38);">记录全部</font><font style="color:rgb(38, 38, 38);background-color:rgba(0, 0, 0, 0.06);">COM_QUERY、COM_STMT_EXECUTE、COM_STMT_FETCH</font><font style="color:rgb(38, 38, 38);">的请求，也会记录相关阶段的耗时信息</font>
 
 ```sql
 2025-01-1711:39:57.854-[user=rds_polardb_x,host=10.0.3.248,port=46546,schema=sysbench,lsn=132039650]SELECT c FROM sbtest8 WHERE id=546506# [state:OK,retry:0,total_time:3549.445us,retransmit_delay:0.0us,fetch_lsn:1918.52us,schedule:45.885us,wait_lsn:1572.403us] # 193706f190c0003b
