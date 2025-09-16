@@ -47,7 +47,23 @@ PolarDB-X Proxy 是使用 Java 开发的高性能 PolarDB-X 标准版代理，�
 - backend_username: 数据库用户名
 - backend_password: 数据库密码(必须有密码，必须使用 mysql_native_password，填写明文密码)
 - memory: Proxy使用内存(单位B，请正确配置，否则可能会导致OOM，推荐 16GB，最少 4GB)
+ 
+> 注意：config.properties的其他配置都可以通过-e参数进行指定，可以覆盖默认值
+
+手动下载docker镜像
+```
+# dockerhub
+docker pull polardbx/polardbx-proxy:latest
+# 国内镜像仓库
+docker pull polardbx-opensource-registry.cn-beijing.cr.aliyuncs.com/polardbx/polardbx-proxy:latest
+```
+
+快速启动proxy
 ```shell
+# polardbx-proxy自带了quick_start.sh脚本
+wget https://raw.githubusercontent.com/polardb/polardbx-proxy/refs/heads/main/polardbx-proxy/quick_start.sh
+
+# 基本脚本快速启动
 bash ./quick_start.sh -e backend_address=xx.xx.xx.xx:xxxx -e backend_username=xxxx -e backend_password=xxxx -e memory=4294967296
 ```
 
