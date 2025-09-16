@@ -26,8 +26,8 @@ import com.alibaba.polardbx.proxy.utils.CharsetMapping;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class ShowPropertiesHandler extends SystemTableRequestHandler {
     public ShowPropertiesHandler(FrontendContext context) {
@@ -49,7 +49,7 @@ public class ShowPropertiesHandler extends SystemTableRequestHandler {
 
     @Override
     protected void emitRows(RowConsumer consumer) throws IOException {
-        final HashMap<Object, Object> map = new HashMap<>(ConfigProps.DEFAULT_PROPS);
+        final Map<Object, Object> map = new TreeMap<>(ConfigProps.DEFAULT_PROPS);
         map.putAll(ConfigLoader.PROPERTIES);
 
         for (Map.Entry<Object, Object> entry : map.entrySet()) {

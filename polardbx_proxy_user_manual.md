@@ -35,6 +35,27 @@ PolarDB-X Proxy 是使用 Java 开发的高性能 PolarDB-X 标准版代理，�
     - show processlist 只会返回主节点上的数据，由于事务级连接池，非活跃会话可能看不到，同时显示的ip端口信息和客户端因为代理的存在，只会显示为认证时匹配的host
     - 协议层返回的 connection id 为 proxy 分配，支持 kill query/connection，processlist 中看到的为主节点中后端连接池中会话，无法 kill
 
+# Docker 快速开始
+## 环境要求
+- Linux 64 位 X86 或者 ARM 架构
+- Docker（推荐最新版本）
+- 内存推荐 16GB，最少 4GB
+- 3307 和 8083 端口需要可用
+
+## 启动
+- backend_address: 数据库地址(格式：ip:port，leader 或者 follower 的地址)
+- backend_username: 数据库用户名
+- backend_password: 数据库密码(必须有密码，必须使用 mysql_native_password，填写明文密码)
+- memory: Proxy使用内存(单位B，请正确配置，否则可能会导致OOM，推荐 16GB，最少 4GB)
+```shell
+bash ./quick_start.sh -e backend_address=xx.xx.xx.xx:xxxx -e backend_username=xxxx -e backend_password=xxxx -e memory=4294967296
+```
+
+## 连接
+```shell
+mysql -Ac -h127.1 -P3307 -uxxx -pxxxx
+```
+
 # 二进制部署包
 ## 打包命令
 maven3.6.3或更高版本

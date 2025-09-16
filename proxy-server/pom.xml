@@ -124,6 +124,54 @@ under the License.
             <build>
                 <plugins>
                     <plugin>
+                        <groupId>pl.project13.maven</groupId>
+                        <artifactId>git-commit-id-plugin</artifactId>
+                        <version>4.9.10</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>revision</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <verbose>true</verbose>
+                            <skip>false</skip>
+                            <prefix>git</prefix>
+                            <dotGitDirectory>../.git</dotGitDirectory>
+                            <generateGitPropertiesFile>true</generateGitPropertiesFile>
+                            <generateGitPropertiesFilename>
+                                ${project.basedir}/src/main/conf/git.properties
+                            </generateGitPropertiesFilename>
+                            <dateFormat>yyyy.MM.dd-HH.mm.ss</dateFormat>
+                            <useNativeGit>false</useNativeGit>
+                            <abbrevLength>7</abbrevLength>
+                            <format>properties</format>
+                            <gitDescribe>
+                                <skip>false</skip>
+                                <always>false</always>
+                                <abbrev>7</abbrev>
+                                <match>*</match>
+                                <dirty>-DEVEL</dirty>
+                                <forceLongFormat>false</forceLongFormat>
+                            </gitDescribe>
+                            <excludeProperties>
+                                <excludeProperty>git.remote.origin.url</excludeProperty>
+                                <excludeProperty>git.commit.message.short</excludeProperty>
+                                <excludeProperty>git.commit.user.email</excludeProperty>
+                                <excludeProperty>git.build.user.email</excludeProperty>
+                                <excludeProperty>git.build.host</excludeProperty>
+                                <excludeProperty>git.commit.id.describe-short</excludeProperty>
+                                <excludeProperty>git.commit.id.abbrev</excludeProperty>
+                                <excludeProperty>git.commit.id.describe</excludeProperty>
+                                <excludeProperty>git.closest.tag.name</excludeProperty>
+                            </excludeProperties>
+                            <failOnNoGitDirectory>false</failOnNoGitDirectory>
+                            <failOnUnableToExtractRepoInfo>true</failOnUnableToExtractRepoInfo>
+                        </configuration>
+                    </plugin>
+
+                    <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-assembly-plugin</artifactId>
                         <configuration>
