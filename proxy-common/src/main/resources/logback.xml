@@ -74,7 +74,7 @@
         </encoder>
     </appender>
 
-    <appender name="asyncSQL" class="ch.qos.logback.classic.AsyncAppender">
+    <appender name="asyncSQL" class="com.alibaba.polardbx.proxy.logger.AsyncAppender">
         <queueSize>100000</queueSize>
         <maxFlushTime>3000</maxFlushTime>
         <discardingThreshold>0</discardingThreshold>

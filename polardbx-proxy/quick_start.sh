@@ -83,6 +83,6 @@ fi
 
 
 LOCALHOST=`getMyIp`
-cmd="docker run -d -it -h $LOCALHOST -e node_ip=$LOCALHOST $CONFIG --name=polardbx-proxy $NET_MODE $PORTS polardbx-opensource-registry.cn-beijing.cr.aliyuncs.com/polardbx/polardbx-proxy:20250916"
+cmd="docker run -d -it -h $LOCALHOST -e node_ip=$LOCALHOST $CONFIG --name=polardbx-proxy $NET_MODE $PORTS polardbx-opensource-registry.cn-beijing.cr.aliyuncs.com/polardbx/polardbx-proxy"
 echo $cmd
 eval $cmd
