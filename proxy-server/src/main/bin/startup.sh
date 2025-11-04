@@ -52,7 +52,6 @@ function prepare() {
   declare -xp > /home/admin/bin/server_env.sh
 }
 
-prepare
 kill_and_clean
 
 args=$@

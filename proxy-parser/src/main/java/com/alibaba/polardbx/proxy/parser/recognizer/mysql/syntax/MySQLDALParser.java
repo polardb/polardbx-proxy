@@ -253,13 +253,16 @@ public class MySQLDALParser extends MySQLParser {
             lexer.nextToken();
             switch (lexer.token()) {
             case KW_WRITE:
-            case KW_ONLY: {
-                final Expression write = new LiteralString(null, lexer.stringValue(), false);
                 lexer.nextToken();
-                return new Pair<VariableExpression, Expression>(read, write);
+                return new MTSSetTransactionStatement(scope,
+                    MTSSetTransactionStatement.AccessMode.READ_WRITE);
+            case KW_ONLY:
+                lexer.nextToken();
+                return new MTSSetTransactionStatement(scope,
+                    MTSSetTransactionStatement.AccessMode.READ_ONLY);
+            default:
+                throw err("unexpected token for SET TRANSACTION statement");
             }
-            }
-            throw err("unexpected token for SET TRANSACTION statement");
         }
 
         case IDENTIFIER:

@@ -29,6 +29,7 @@ import com.alibaba.polardbx.proxy.parser.ast.stmt.SQLStatement;
 import com.alibaba.polardbx.proxy.parser.ast.stmt.dal.DALSetCharacterSetStatement;
 import com.alibaba.polardbx.proxy.parser.ast.stmt.dal.DALSetNamesStatement;
 import com.alibaba.polardbx.proxy.parser.ast.stmt.dal.DALSetStatement;
+import com.alibaba.polardbx.proxy.parser.ast.stmt.mts.MTSSetTransactionStatement;
 import com.alibaba.polardbx.proxy.parser.recognizer.SQLParser;
 import com.alibaba.polardbx.proxy.parser.util.Pair;
 import com.alibaba.polardbx.proxy.protocol.command.ComQuery;
@@ -118,6 +119,17 @@ public class VariablesPostGatherTask implements ScheduleTask {
                     systemVariables.add("character_set_results");
                     systemVariables.add("character_set_connection");
                     systemVariables.add("collation_connection");
+                } else if (stmt instanceof MTSSetTransactionStatement) {
+                    // SET TRANSACTION
+                    final MTSSetTransactionStatement mtsSet = (MTSSetTransactionStatement) stmt;
+                    if (mtsSet.getScope() == VariableScope.GLOBAL) {
+                        continue; // ignore set global
+                    }
+                    if (mtsSet.getLevel() != null) {
+                        systemVariables.add("transaction_isolation");
+                    } else if (mtsSet.getAccessMode() != null) {
+                        systemVariables.add("transaction_read_only");
+                    }
                 }
             }
         } catch (Throwable t) {

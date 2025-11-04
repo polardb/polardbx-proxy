@@ -2105,23 +2105,40 @@ public class MySQLOutputASTVisitor implements SQLASTVisitor {
                 throw new IllegalArgumentException("unknown scope for SET TRANSACTION ISOLATION LEVEL: " + scope);
             }
         }
-        appendable.append("TRANSACTION ISOLATION LEVEL ");
-        switch (node.getLevel()) {
-        case READ_COMMITTED:
-            appendable.append("READ COMMITTED");
-            break;
-        case READ_UNCOMMITTED:
-            appendable.append("READ UNCOMMITTED");
-            break;
-        case REPEATABLE_READ:
-            appendable.append("REPEATABLE READ");
-            break;
-        case SERIALIZABLE:
-            appendable.append("SERIALIZABLE");
-            break;
-        default:
+        if (node.getLevel() != null) {
+            appendable.append("TRANSACTION ISOLATION LEVEL ");
+            switch (node.getLevel()) {
+            case READ_COMMITTED:
+                appendable.append("READ COMMITTED");
+                break;
+            case READ_UNCOMMITTED:
+                appendable.append("READ UNCOMMITTED");
+                break;
+            case REPEATABLE_READ:
+                appendable.append("REPEATABLE READ");
+                break;
+            case SERIALIZABLE:
+                appendable.append("SERIALIZABLE");
+                break;
+            default:
+                throw new IllegalArgumentException(
+                    "unknown level for SET TRANSACTION ISOLATION LEVEL: " + node.getLevel());
+            }
+        } else if (node.getAccessMode() != null) {
+            switch (node.getAccessMode()) {
+            case READ_ONLY:
+                appendable.append("TRANSACTION READ ONLY");
+                break;
+            case READ_WRITE:
+                appendable.append("TRANSACTION READ WRITE");
+                break;
+            default:
+                throw new IllegalArgumentException(
+                    "unknown access mode for SET TRANSACTION ISOLATION LEVEL: " + node.getAccessMode());
+            }
+        } else {
             throw new IllegalArgumentException(
-                "unknown level for SET TRANSACTION ISOLATION LEVEL: " + node.getLevel());
+                "level and access mode are both null for SET TRANSACTION ISOLATION LEVEL");
         }
     }
 

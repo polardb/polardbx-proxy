@@ -33,8 +33,13 @@ public class MTSSetTransactionStatement implements SQLStatement {
         READ_UNCOMMITTED, READ_COMMITTED, REPEATABLE_READ, SERIALIZABLE
     }
 
+    public static enum AccessMode {
+        READ_ONLY, READ_WRITE
+    }
+
     private final VariableScope scope;
     private final IsolationLevel level;
+    private final AccessMode accessMode;
 
     public MTSSetTransactionStatement(VariableScope scope, IsolationLevel level) {
         super();
@@ -43,17 +48,29 @@ public class MTSSetTransactionStatement implements SQLStatement {
         }
         this.level = level;
         this.scope = scope;
+        this.accessMode = null;
     }
 
-    /**
-     *
-     */
+    public MTSSetTransactionStatement(VariableScope scope, AccessMode accessMode) {
+        super();
+        if (accessMode == null) {
+            throw new IllegalArgumentException("access mode is null");
+        }
+        this.accessMode = accessMode;
+        this.level = null;
+        this.scope = scope;
+    }
+
     public VariableScope getScope() {
         return scope;
     }
 
     public IsolationLevel getLevel() {
         return level;
+    }
+
+    public AccessMode getAccessMode() {
+        return accessMode;
     }
 
     @Override

@@ -34,6 +34,7 @@ PolarDB-X Proxy 是使用 Java 开发的高性能 PolarDB-X 标准版代理，�
     - wait_timeout 不会生效
     - show processlist 只会返回主节点上的数据，由于事务级连接池，非活跃会话可能看不到，同时显示的ip端口信息和客户端因为代理的存在，只会显示为认证时匹配的host
     - 协议层返回的 connection id 为 proxy 分配，支持 kill query/connection，processlist 中看到的为主节点中后端连接池中会话，无法 kill
+    - 支持大部分 session 级别的系统变量透传，设置 global 级别的系统变量后需重启 Proxy
 
 # Docker 快速开始
 ## 环境要求
