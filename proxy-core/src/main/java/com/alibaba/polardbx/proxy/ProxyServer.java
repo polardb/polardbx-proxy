@@ -35,6 +35,7 @@ import com.alibaba.polardbx.proxy.serverless.HaManager;
 import com.alibaba.polardbx.proxy.serverless.SmoothSwitchoverMonitor;
 import com.alibaba.polardbx.proxy.sync.SyncService;
 import com.alibaba.polardbx.proxy.utils.NamedThreadFactory;
+import com.alibaba.polardbx.proxy.utils.VersionUtils;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,7 +92,7 @@ public class ProxyServer implements NIOConnectionFactory {
         NIOAcceptor acceptor = new NIOAcceptor(ThreadNames.NIO_ACCEPTOR, proxyPort, worker, this);
         acceptor.start();
 
-        LOGGER.info("==================== Proxy started.");
+        LOGGER.info("==================== Proxy started. " + VersionUtils.getVersion());
     }
 
     @Override

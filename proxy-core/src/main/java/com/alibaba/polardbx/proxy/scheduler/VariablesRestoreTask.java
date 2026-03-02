@@ -77,8 +77,11 @@ public class VariablesRestoreTask implements ScheduleTask {
                         builder.append(',');
                     }
                     final Map<CaseInsensitiveString, String> globalVariables = backendContext.getGlobalVariables();
-                    builder.append("@@").append(varName).append('=')
-                        .append(null == globalVariables ? "null" : globalVariables.get(varName));
+                    String val = null == globalVariables ? "DEFAULT" : globalVariables.get(varName);
+                    if (null == val) {
+                        val = "DEFAULT"; // prevent null for some variables
+                    }
+                    builder.append("@@").append(varName).append('=').append(val);
                 }
             }
         }

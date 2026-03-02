@@ -247,9 +247,6 @@ public class MySQLDALParser extends MySQLParser {
         lexer.nextToken();
         switch (lexer.token()) {
         case KW_READ: {
-            final SysVarPrimary read = new SysVarPrimary(VariableScope.SESSION,
-                lexer.stringValue(),
-                lexer.stringValueUppercase());
             lexer.nextToken();
             switch (lexer.token()) {
             case KW_WRITE:
@@ -265,49 +262,44 @@ public class MySQLDALParser extends MySQLParser {
             }
         }
 
-        case IDENTIFIER:
+        case KW_ISOLATION:
             lexer.nextToken();
-            switch (lexer.getLastToken()) {
-            case KW_ISOLATION:
-                match(KW_LEVEL);
+            match(KW_LEVEL);
+            switch (lexer.token()) {
+            case KW_READ:
+                lexer.nextToken();
                 switch (lexer.token()) {
-                case KW_READ:
-                    lexer.nextToken();
-                    switch (lexer.token()) {
-                    case KW_COMMITTED:
-                        lexer.nextToken();
-                        return new MTSSetTransactionStatement(scope,
-                            MTSSetTransactionStatement.IsolationLevel.READ_COMMITTED);
-                    case KW_UNCOMMITTED:
-                        lexer.nextToken();
-                        return new MTSSetTransactionStatement(scope,
-                            MTSSetTransactionStatement.IsolationLevel.READ_UNCOMMITTED);
-                    }
-                    throw err("unknown isolation read level: " + lexer.stringValue());
-                case KW_REPEATABLE:
-                    lexer.nextToken();
-                    match(KW_READ);
-                    return new MTSSetTransactionStatement(scope,
-                        MTSSetTransactionStatement.IsolationLevel.REPEATABLE_READ);
-                case KW_SERIALIZABLE:
+                case KW_COMMITTED:
                     lexer.nextToken();
                     return new MTSSetTransactionStatement(scope,
-                        MTSSetTransactionStatement.IsolationLevel.SERIALIZABLE);
-                }
-                throw err("unknown isolation level: " + lexer.stringValue());
-
-            case IDENTIFIER:
-                if (lexer.stringValueUppercase().equals("POLICY")) {
-                    final SysVarPrimary transactionPolicy = new SysVarPrimary(VariableScope.SESSION,
-                        "transaction policy",
-                        "TRANSACTION POLICY");
-
-                    final Expression policy = new LiteralNumber(lexer.integerValue());
+                        MTSSetTransactionStatement.IsolationLevel.READ_COMMITTED);
+                case KW_UNCOMMITTED:
                     lexer.nextToken();
-                    return new Pair<VariableExpression, Expression>(transactionPolicy, policy);
+                    return new MTSSetTransactionStatement(scope,
+                        MTSSetTransactionStatement.IsolationLevel.READ_UNCOMMITTED);
                 }
-            default:
-                throw err("unexpected token for SET TRANSACTION statement");
+                throw err("unknown isolation read level: " + lexer.stringValue());
+            case KW_REPEATABLE:
+                lexer.nextToken();
+                match(KW_READ);
+                return new MTSSetTransactionStatement(scope,
+                    MTSSetTransactionStatement.IsolationLevel.REPEATABLE_READ);
+            case KW_SERIALIZABLE:
+                lexer.nextToken();
+                return new MTSSetTransactionStatement(scope,
+                    MTSSetTransactionStatement.IsolationLevel.SERIALIZABLE);
+            }
+            throw err("unknown isolation level: " + lexer.stringValue());
+
+        case IDENTIFIER:
+            if (lexer.stringValueUppercase().equals("POLICY")) {
+                final SysVarPrimary transactionPolicy = new SysVarPrimary(VariableScope.SESSION,
+                    "transaction policy",
+                    "TRANSACTION POLICY");
+
+                final Expression policy = new LiteralNumber(lexer.integerValue());
+                lexer.nextToken();
+                return new Pair<VariableExpression, Expression>(transactionPolicy, policy);
             }
         default:
             throw err("unexpected token for SET TRANSACTION statement");

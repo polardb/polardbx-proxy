@@ -122,13 +122,14 @@ public class VariablesPostGatherTask implements ScheduleTask {
                 } else if (stmt instanceof MTSSetTransactionStatement) {
                     // SET TRANSACTION
                     final MTSSetTransactionStatement mtsSet = (MTSSetTransactionStatement) stmt;
-                    if (mtsSet.getScope() == VariableScope.GLOBAL) {
-                        continue; // ignore set global
+                    if (VariableScope.GLOBAL == mtsSet.getScope() || null == mtsSet.getScope()) {
+                        continue; // ignore set global and set next transaction
                     }
+                    assert VariableScope.SESSION == mtsSet.getScope();
                     if (mtsSet.getLevel() != null) {
-                        systemVariables.add("transaction_isolation");
+                        systemVariables.add("SESSION.transaction_isolation");
                     } else if (mtsSet.getAccessMode() != null) {
-                        systemVariables.add("transaction_read_only");
+                        systemVariables.add("SESSION.transaction_read_only");
                     }
                 }
             }

@@ -41,13 +41,15 @@ public class NIOAcceptor extends Thread {
     private final ServerSocketChannel serverChannel;
     private final NIOWorker worker;
     private final NIOConnectionFactory factory;
+    private volatile boolean running = true;
 
     public NIOAcceptor(String name, int port, NIOWorker worker, NIOConnectionFactory factory)
         throws IOException {
-        this.port = port;
         this.selector = Selector.open();
         this.serverChannel = ServerSocketChannel.open();
         this.serverChannel.socket().bind(new InetSocketAddress(port), 65535);
+        // Get the actual port (important when port=0 for auto-assign)
+        this.port = this.serverChannel.socket().getLocalPort();
         this.serverChannel.configureBlocking(false);
         this.serverChannel.register(selector, SelectionKey.OP_ACCEPT);
         this.worker = worker;
@@ -81,7 +83,7 @@ public class NIOAcceptor extends Thread {
 
     @Override
     public void run() {
-        for (; ; ) {
+        while (running) {
             try {
                 selector.select(1000L);
                 final Set<SelectionKey> keys = selector.selectedKeys();
@@ -97,9 +99,12 @@ public class NIOAcceptor extends Thread {
                     keys.clear();
                 }
             } catch (Throwable e) {
-                LOGGER.warn(getName(), e);
+                if (running) {
+                    LOGGER.warn(getName(), e);
+                }
             }
         }
+        LOGGER.info("{} stopped", super.getName());
     }
 
     private static void closeChannel(SocketChannel channel) {
@@ -120,7 +125,9 @@ public class NIOAcceptor extends Thread {
     }
 
     public synchronized void offline() {
+        running = false;
         try {
+            this.selector.wakeup();  // Wake up selector to exit select() immediately
             this.serverChannel.close();
             this.selector.close();
             LOGGER.info("{} offline success {}", super.getName(), port);

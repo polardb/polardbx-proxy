@@ -119,7 +119,7 @@ public class UnsafeDecoder extends Decoder {
     public long u48() {
         assert pos + 6 <= length;
         final long v = (UnsafeBytes.UNSAFE.getInt(buf, UnsafeBytes.BYTE_ARRAY_BASE_OFFSET + base + pos) & 0xFFFFFFFFL) +
-            ((UnsafeBytes.UNSAFE.getShort(buf, UnsafeBytes.BYTE_ARRAY_BASE_OFFSET + base + pos) & 0xFFFFL) << 32);
+            ((UnsafeBytes.UNSAFE.getShort(buf, UnsafeBytes.BYTE_ARRAY_BASE_OFFSET + base + pos + 4) & 0xFFFFL) << 32);
         pos += 6;
         return v;
     }
@@ -130,7 +130,7 @@ public class UnsafeDecoder extends Decoder {
             throw new IllegalStateException("bad u48 decoding, pos=" + pos + ", length=" + length);
         }
         final long v = (UnsafeBytes.UNSAFE.getInt(buf, UnsafeBytes.BYTE_ARRAY_BASE_OFFSET + base + pos) & 0xFFFFFFFFL) +
-            ((UnsafeBytes.UNSAFE.getShort(buf, UnsafeBytes.BYTE_ARRAY_BASE_OFFSET + base + pos) & 0xFFFFL) << 32);
+            ((UnsafeBytes.UNSAFE.getShort(buf, UnsafeBytes.BYTE_ARRAY_BASE_OFFSET + base + pos + 4) & 0xFFFFL) << 32);
         pos += 6;
         return v;
     }

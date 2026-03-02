@@ -200,8 +200,8 @@ public class EncoderImpl extends Encoder {
     @Override
     public void u24(int v) throws IOException {
         ensureSpace(3);
-        headWriter.putShort((short) v);
-        headWriter.put((byte) (v >>> 16));
+        writer.putShort((short) v);
+        writer.put((byte) (v >>> 16));
         written += 3;
         postDealing();
     }
@@ -217,8 +217,8 @@ public class EncoderImpl extends Encoder {
     @Override
     public void u48(long v) throws IOException {
         ensureSpace(6);
-        headWriter.putInt((int) v);
-        headWriter.putShort((short) (v >>> 32));
+        writer.putInt((int) v);
+        writer.putShort((short) (v >>> 32));
         written += 6;
         postDealing();
     }
@@ -263,8 +263,8 @@ public class EncoderImpl extends Encoder {
             written += 3;
         } else if (v < 16777216) {
             writer.put((byte) 0xFD);
-            headWriter.putShort((short) v);
-            headWriter.put((byte) (v >>> 16));
+            writer.putShort((short) v);
+            writer.put((byte) (v >>> 16));
             written += 4;
         } else {
             writer.put((byte) 0xFE);

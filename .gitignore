@@ -23,3 +23,4 @@ dependencies.properties
 *.orc
 *.crc
 logs/
+dynamic.json*

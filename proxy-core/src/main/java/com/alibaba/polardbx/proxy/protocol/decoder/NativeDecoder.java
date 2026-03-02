@@ -116,7 +116,7 @@ public class NativeDecoder extends Decoder {
     public long u48() {
         assert pos + 6 <= length;
         final long v = (UnsafeBytes.UNSAFE.getInt(address + pos) & 0xFFFFFFFFL) +
-            ((UnsafeBytes.UNSAFE.getShort(address + pos) & 0xFFFFL) << 32);
+            ((UnsafeBytes.UNSAFE.getShort(address + pos + 4) & 0xFFFFL) << 32);
         pos += 6;
         return v;
     }
@@ -127,7 +127,7 @@ public class NativeDecoder extends Decoder {
             throw new IllegalStateException("bad u48 decoding, pos=" + pos + ", length=" + length);
         }
         final long v = (UnsafeBytes.UNSAFE.getInt(address + pos) & 0xFFFFFFFFL) +
-            ((UnsafeBytes.UNSAFE.getShort(address + pos) & 0xFFFFL) << 32);
+            ((UnsafeBytes.UNSAFE.getShort(address + pos + 4) & 0xFFFFL) << 32);
         pos += 6;
         return v;
     }

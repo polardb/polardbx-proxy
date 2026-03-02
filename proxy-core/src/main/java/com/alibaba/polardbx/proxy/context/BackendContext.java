@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class BackendContext extends MysqlContext {
     private static final Logger LOGGER = LoggerFactory.getLogger(BackendContext.class);
@@ -47,6 +48,8 @@ public class BackendContext extends MysqlContext {
     @Setter
     private boolean upToDate = true;
 
+    private final AtomicReference<BackendConnectionWrapper> currentActiveBackend = new AtomicReference<>();
+
     public BackendContext(InetSocketAddress remoteAddress, int connectionId, int capabilities) {
         super(remoteAddress, connectionId, capabilities);
     }
@@ -56,6 +59,7 @@ public class BackendContext extends MysqlContext {
 
     private LruCache<ServerPreparedStatementKey, Integer> initPreparedStatementCache(
         @NotNull BackendConnectionWrapper backend) {
+        currentActiveBackend.set(backend);
         LruCache<ServerPreparedStatementKey, Integer> cache = preparedStatementCache;
         if (null == cache) {
             synchronized (this) {
@@ -64,11 +68,14 @@ public class BackendContext extends MysqlContext {
                         ConfigLoader.PROPERTIES.getProperty(ConfigProps.PREPARED_STATEMENT_CACHE_SIZE));
                     cache = preparedStatementCache = new LruCache<>(cache_size,
                         (k, v) -> {
+                            final BackendConnectionWrapper now = currentActiveBackend.get();
                             try {
-                                backend.closePreparedStatement(v);
+                                // Note: We should close prepared statement on backend which is now active.
+                                // Use backend directly may be freed.
+                                now.closePreparedStatement(v);
                             } catch (Throwable e) {
                                 LOGGER.error("Failed to close prepared statement: {} id: {} on connection: {}", k, v,
-                                    backend, e);
+                                    now, e);
                             }
                         });
                 }

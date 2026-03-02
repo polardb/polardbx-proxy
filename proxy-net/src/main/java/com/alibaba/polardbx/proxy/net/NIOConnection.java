@@ -374,7 +374,10 @@ public abstract class NIOConnection implements AutoCloseable, Comparable<NIOConn
     public void enableRead() {
         keyLock.lock();
         try {
-            SelectionKey key = this.processKey;
+            final SelectionKey key = this.processKey;
+            if (key == null || !key.isValid()) {
+                return;
+            }
             if ((key.interestOps() & SelectionKey.OP_READ) == 0) {
                 LOGGER.debug("{} resume read.", this);
                 key.interestOps(key.interestOps() | SelectionKey.OP_READ);
@@ -383,7 +386,10 @@ public abstract class NIOConnection implements AutoCloseable, Comparable<NIOConn
             keyLock.unlock();
         }
         // wakeup anyway in case we invoke from other thread
-        processKey.selector().wakeup();
+        final SelectionKey key = this.processKey;
+        if (key != null) {
+            key.selector().wakeup();
+        }
     }
 
     // disable read for flow control
@@ -391,7 +397,10 @@ public abstract class NIOConnection implements AutoCloseable, Comparable<NIOConn
         LOGGER.debug("{} pause read.", this);
         keyLock.lock();
         try {
-            SelectionKey key = this.processKey;
+            final SelectionKey key = this.processKey;
+            if (key == null || !key.isValid()) {
+                return;
+            }
             key.interestOps(key.interestOps() & ~SelectionKey.OP_READ);
         } finally {
             keyLock.unlock();
@@ -614,20 +623,29 @@ public abstract class NIOConnection implements AutoCloseable, Comparable<NIOConn
     private void enableWrite() {
         keyLock.lock();
         try {
-            SelectionKey key = this.processKey;
+            final SelectionKey key = this.processKey;
+            if (key == null || !key.isValid()) {
+                return;
+            }
             key.interestOps(key.interestOps() | SelectionKey.OP_WRITE);
             writeBlocking.setRelease(true);
         } finally {
             keyLock.unlock();
         }
         // wakeup anyway in case we invoke from other thread
-        processKey.selector().wakeup();
+        final SelectionKey key = this.processKey;
+        if (key != null) {
+            key.selector().wakeup();
+        }
     }
 
     private void disableWrite() {
         keyLock.lock();
         try {
-            SelectionKey key = this.processKey;
+            final SelectionKey key = this.processKey;
+            if (key == null || !key.isValid()) {
+                return;
+            }
             key.interestOps(key.interestOps() & ~SelectionKey.OP_WRITE);
             writeBlocking.setRelease(false);
         } finally {
@@ -804,17 +822,19 @@ public abstract class NIOConnection implements AutoCloseable, Comparable<NIOConn
     // only package accessible
     void event(int readyOps) {
         try {
+            // Handle CONNECT first since it's a one-time event during connection establishment
+            if ((readyOps & SelectionKey.OP_CONNECT) != 0) {
+                processor.getPerfCollection().getConnectCount().getAndIncrement();
+                connectByEvent();
+            }
+            // Handle READ and WRITE independently - they can occur simultaneously
             if ((readyOps & SelectionKey.OP_READ) != 0) {
                 processor.getPerfCollection().getReadCount().getAndIncrement();
                 readByEvent();
-            } else if ((readyOps & SelectionKey.OP_WRITE) != 0) {
+            }
+            if ((readyOps & SelectionKey.OP_WRITE) != 0) {
                 processor.getPerfCollection().getWriteCount().getAndIncrement();
                 writeByEvent();
-            } else if ((readyOps & SelectionKey.OP_CONNECT) != 0) {
-                processor.getPerfCollection().getConnectCount().getAndIncrement();
-                connectByEvent();
-            } else {
-                throw new RuntimeException("Unknown event readyOps: " + readyOps);
             }
         } catch (Throwable t) {
             onFatalError(t);

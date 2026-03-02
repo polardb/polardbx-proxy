@@ -362,7 +362,8 @@ public abstract class Decoder {
         if (-1 == buffer.getShort(base) && -1 == buffer.get(base + 2)) {
             return decodeNormalPacketLarge(buffer, base, slice.getValid());
         }
-        final Decoder decoder = new SimpleDecoder(buffer, base, slice.getValid());
+        final Decoder decoder = new SimpleDecoder(buffer, base + MysqlPacket.NORMAL_HEADER_SIZE,
+            slice.getValid() - MysqlPacket.NORMAL_HEADER_SIZE);
         decoder.lastSeq = buffer.get(base + 3) & 0xFF;
         return decoder;
     }

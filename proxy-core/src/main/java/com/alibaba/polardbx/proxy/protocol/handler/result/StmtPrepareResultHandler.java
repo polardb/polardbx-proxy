@@ -162,13 +162,19 @@ public class StmtPrepareResultHandler extends ResultHandler {
             // Note: only eof when parameters > 0 or fields > 0
             if (parameters != null) {
                 updateState(ResultState.Parameters);
+                forwardPacket = forwarder != null;
             } else if (fields != null) {
                 updateState(ResultState.Fields);
+                forwardPacket = forwarder != null;
             } else {
                 // no param and no fields
+                // Note: when this case we should put packet into pendingPackets for stmtId patch
+                if (forwarder != null) {
+                    pendingPackets.add(packet.dump());
+                }
+                forwardPacket = false;
                 updateState(ResultState.OK);
             }
-            forwardPacket = forwarder != null;
         }
         break;
 

@@ -27,7 +27,7 @@ import java.sql.Statement;
 
 public class JdbcTest {
     private static final String BASE_URL = "jdbc:mysql://127.1:3307/test?characterEncoding=UTF-8&useSSL=false";
-    private static final String USR = "";
+    private static final String USR = "polardbx_root";
     private static final String PSW = "";
 
     static {
@@ -42,6 +42,108 @@ public class JdbcTest {
         try (final Connection connection = DriverManager.getConnection(BASE_URL, USR, PSW);
             final Statement statement = connection.createStatement()) {
             statement.execute("set global mock = '" + mock + "'");
+        }
+    }
+
+    private void createMyTableIfNotExists() throws Exception {
+        try (final Connection connection = DriverManager.getConnection(BASE_URL, USR, PSW);
+             final Statement statement = connection.createStatement()) {
+            statement.execute("CREATE TABLE IF NOT EXISTS mytable (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255))");
+        }
+    }
+
+    private void insertDataIfTableEmpty() throws Exception {
+        createMyTableIfNotExists();
+        try (final Connection connection = DriverManager.getConnection(BASE_URL, USR, PSW);
+             final Statement statement = connection.createStatement();
+             final ResultSet rs = statement.executeQuery("SELECT COUNT(*) FROM mytable")) {
+
+            rs.next();
+            int count = rs.getInt(1);
+
+            if (count == 0) {
+                // 插入一些测试数据
+                statement.execute("INSERT INTO mytable (name) VALUES ('test1')");
+                statement.execute("INSERT INTO mytable (name) VALUES ('test2')");
+                statement.execute("INSERT INTO mytable (name) VALUES ('test3')");
+                System.out.println("Inserted test data into mytable");
+            } else {
+                System.out.println("mytable already contains " + count + " rows");
+            }
+        }
+    }
+
+    private void createT25StreamReadTableIfNotExists() throws Exception {
+        try (final Connection connection = DriverManager.getConnection(BASE_URL, USR, PSW);
+             final Statement statement = connection.createStatement()) {
+            statement.execute("CREATE TABLE IF NOT EXISTS t_25_stream_read (id INT PRIMARY KEY AUTO_INCREMENT, data VARCHAR(255))");
+        }
+    }
+
+    private void populateT25StreamReadTableIfEmpty() throws Exception {
+        createT25StreamReadTableIfNotExists();
+
+        try (final Connection connection = DriverManager.getConnection(BASE_URL, USR, PSW);
+             final Statement statement = connection.createStatement();
+             final ResultSet rs = statement.executeQuery("SELECT COUNT(*) FROM t_25_stream_read")) {
+
+            rs.next();
+            int count = rs.getInt(1);
+
+            if (count == 0) {
+                System.out.println("t_25_stream_read table is empty, inserting 1,000,000 rows...");
+
+                // 使用多线程批量插入100万行数据
+                final int totalRows = 1000000;
+                final int threadCount = 10;
+                final int rowsPerThread = totalRows / threadCount;
+
+                Thread[] threads = new Thread[threadCount];
+
+                for (int i = 0; i < threadCount; i++) {
+                    final int threadIndex = i;
+                    threads[i] = new Thread(() -> {
+                        try {
+                            // 每个线程使用独立的连接
+                            try (final Connection conn = DriverManager.getConnection(BASE_URL, USR, PSW);
+                                 final Statement stmt = conn.createStatement()) {
+
+                                // 手动拼接batch insert语句
+                                StringBuilder batchSql = new StringBuilder("INSERT INTO t_25_stream_read (data) VALUES ");
+                                int startId = threadIndex * rowsPerThread + 1;
+                                int endId = (threadIndex + 1) * rowsPerThread;
+
+                                for (int j = startId; j <= endId; j++) {
+                                    if (j > startId) {
+                                        batchSql.append(",");
+                                    }
+                                    batchSql.append("('data_row_").append(j).append("')");
+                                }
+
+                                int inserted = stmt.executeUpdate(batchSql.toString());
+                                System.out.println("Thread " + threadIndex + " inserted " + inserted + " rows");
+                            }
+                        } catch (Exception e) {
+                            System.err.println("Error in thread " + threadIndex + ": " + e.getMessage());
+                            e.printStackTrace();
+                        }
+                    });
+                }
+
+                // 启动所有线程
+                for (Thread thread : threads) {
+                    thread.start();
+                }
+
+                // 等待所有线程完成
+                for (Thread thread : threads) {
+                    thread.join();
+                }
+
+                System.out.println("Finished inserting 1,000,000 rows into t_25_stream_read table");
+            } else {
+                System.out.println("t_25_stream_read already contains " + count + " rows");
+            }
         }
     }
 
@@ -86,6 +188,7 @@ public class JdbcTest {
 
     @Test
     public void testBigQuery() throws Exception {
+        populateT25StreamReadTableIfEmpty();
         try (final Connection conn = DriverManager.getConnection(BASE_URL + "&useServerPrepStmts=true", USR, PSW);
             final Statement stmt = conn.createStatement()) {
             stmt.setFetchSize(Integer.MIN_VALUE);
@@ -105,6 +208,7 @@ public class JdbcTest {
 
     @Test
     public void testCursor() throws Exception {
+        populateT25StreamReadTableIfEmpty();
         try (final Connection conn = DriverManager.getConnection(
             BASE_URL + "&useServerPrepStmts=true&useCursorFetch=true", USR, PSW);
             final Statement stmt = conn.createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY)) {
@@ -125,6 +229,7 @@ public class JdbcTest {
 
     @Test
     public void testLongData() throws Exception {
+        insertDataIfTableEmpty();
         try (final Connection conn = DriverManager.getConnection(BASE_URL + "&useServerPrepStmts=true", USR, PSW);
             final PreparedStatement stmt = conn.prepareStatement("select * from mytable where name = ?")) {
             stmt.setClob(1, new StringReader("hello world"));
@@ -134,6 +239,7 @@ public class JdbcTest {
 
     @Test
     public void testReset() throws Exception {
+        insertDataIfTableEmpty();
         try (final Connection conn = DriverManager.getConnection(
             BASE_URL + "&useServerPrepStmts=true&useCursorFetch=true", USR, PSW);
             final PreparedStatement stmt = conn.prepareStatement("select * from mytable where name = ?",
@@ -166,6 +272,7 @@ public class JdbcTest {
 
     @Test
     public void testNoDeprecateEof() throws Exception {
+        populateT25StreamReadTableIfEmpty();
         setGlobalMock("force_frontend_no_deprecate_eof");
         try (final Connection conn = DriverManager.getConnection(
             BASE_URL + "&useServerPrepStmts=true&useCursorFetch=true", USR, PSW)) {
@@ -211,6 +318,16 @@ public class JdbcTest {
             }
         }
         setGlobalMock("");
+    }
+
+    @Test
+    public void testPrepareStmtNoParamAndResult() throws Exception {
+        try (final Connection conn = DriverManager.getConnection(BASE_URL + "&useServerPrepStmts=true", USR, PSW)) {
+            try (final PreparedStatement ps = conn.prepareStatement("commit")) {
+                ps.executeUpdate();
+                System.out.println("commit");
+            }
+        }
     }
 
     @Test
