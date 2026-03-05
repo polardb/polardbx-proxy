@@ -418,7 +418,7 @@ public abstract class NIOConnection implements AutoCloseable, Comparable<NIOConn
             try {
                 // to prevent reallocate after close
                 if (tcpClosed.getPlain()) { // in lock so plain read
-                    throw new RuntimeException(this + " closed.");
+                    throw new RuntimeException("NIO-Connection #" + internalId + " closed.");
                 }
 
                 // select one buffer for recv
@@ -694,7 +694,7 @@ public abstract class NIOConnection implements AutoCloseable, Comparable<NIOConn
         writeLock.lock();
         try {
             if (tcpClosed.getPlain()) { // in lock so plain read
-                throw new RuntimeException(this + " closed.");
+                throw new RuntimeException("NIO-Connection #" + internalId + " closed.");
             }
 
             // push packets to queue
@@ -737,7 +737,7 @@ public abstract class NIOConnection implements AutoCloseable, Comparable<NIOConn
             writeLock.lock();
             try {
                 if (tcpClosed.getPlain()) { // in lock so plain read
-                    throw new RuntimeException(this + " closed.");
+                    throw new RuntimeException("NIO-Connection #" + internalId + " closed.");
                 }
 
                 // push packets to queue
@@ -765,7 +765,7 @@ public abstract class NIOConnection implements AutoCloseable, Comparable<NIOConn
         writeLock.lock();
         try {
             if (tcpClosed.getPlain()) { // in lock so plain read
-                throw new RuntimeException(this + " closed.");
+                throw new RuntimeException("NIO-Connection #" + internalId + " closed.");
             }
 
             if (write0()) {
@@ -794,7 +794,7 @@ public abstract class NIOConnection implements AutoCloseable, Comparable<NIOConn
 
         // close check(close updated in sync block, so plain read here)
         if (tcpClosed.getPlain()) {
-            throw new RuntimeException(this + " closed.");
+            throw new RuntimeException("NIO-Connection #" + internalId + " closed.");
         }
 
         if (channel.isConnectionPending()) {
